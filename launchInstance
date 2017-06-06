@@ -1,0 +1,26 @@
+#!/usr/bin/python
+
+import boto.ec2
+import time
+import os
+webscript="""#!/bin/bash
+sudo apt-get update
+sudo apt-get install -y python
+"""
+conn = boto.ec2.connect_to_region("ap-south-1",aws_access_key_id='xxxxxxxx',aws_secret_access_key='xxxxxx')
+res=conn.get_all_instances(filters={"tag:Name" : "web", 'instance-state-name':'running'})
+if res:
+  print 'Instance is already launched'
+else:
+  t=conn.run_instances(image_id='ami-c2ee9dad', key_name='xxxxx',instance_type='t2.micro',user_data=webscript,security_group_ids=['xxxxxx', 'xxxxxx'])
+  res=conn.get_all_instances(filters={'instance-state-name':'pending'})
+  for r in res:
+   for i in r.instances:
+    i.add_tag('Name', 'web')
+    while i.state != 'running':
+          time.sleep(20)
+          i.update()
+  ip=i.ip_address
+  file=open("webip.txt","w")
+  file.write(ip)
+  file.close()
